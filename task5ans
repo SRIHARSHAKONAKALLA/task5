@@ -1,0 +1,32 @@
+1. Install and configure Jenkins on a server.
+2. Create a new Jenkins pipeline project by selecting "New Item" and then "Pipeline" from the Jenkins dashboard.
+3. In the pipeline configuration screen, scroll down to the "Pipeline" section and select "Pipeline script" as the definition.
+4. Enter the following script in the "Pipeline script" field:
+
+pipeline {
+  agent any
+  stages {
+    stage('Build') {
+      steps {
+        sh 'npm install'
+        sh 'npm run build'
+      }
+    }
+    stage('Dockerize') {
+      steps {
+        sh 'docker build -t myapp .'
+        sh 'docker tag myapp:latest myregistry/myapp:latest'
+        withCredentials([usernamePassword(credentialsId: 'docker-registry-creds', usernameVariable: 'DOCKER_REGISTRY_USERNAME', passwordVariable: 'DOCKER_REGISTRY_PASSWORD')]) {
+          sh 'docker login -u $DOCKER_REGISTRY_USERNAME -p $DOCKER_REGISTRY_PASSWORD myregistry'
+          sh 'docker push myregistry/myapp:latest'
+        }
+      }
+    }
+  }
+}
+
+
+5. This script will run two stages: "Build" and "Dockerize". The "Build" stage will install dependencies and build the application. The "Dockerize" stage will build a Docker image of the application, tag it with a registry URL, and push it to a Docker registry.
+6. Create a Jenkins credential for the Docker registry by selecting "Credentials" from the Jenkins dashboard and then "System" from the left-hand menu. Click "Global credentials" and then "Add Credentials". Enter the Docker registry URL, username, and password.
+7. Replace "myapp" and "myregistry" in the script with your application name and Docker registry URL, respectively.
+8. Save the pipeline configuration and run the pipeline. Jenkins will automatically trigger the pipeline whenever there is a new commit to the application's source code.
